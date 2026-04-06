@@ -1,0 +1,7 @@
+# Ignore generated model artifacts and plots
+kmeans_clusters.png
+kmeans_artifacts.joblib
+
+# Python common ignores
+__pycache__/
+*.py[cod]
