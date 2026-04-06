@@ -4,6 +4,7 @@ from pathlib import Path
 import joblib
 import matplotlib.pyplot as plt
 import pandas as pd
+from sklearn.decomposition import PCA
 
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACTS_FILE = BASE_DIR / "kmeans_artifacts.joblib"
@@ -37,42 +38,50 @@ def predict_cluster(data):
 
 def visualize_with_new_customer(new_row, cluster):
     model, scaler, _, train_features, train_labels = load_artifacts()
-    centroids = scaler.inverse_transform(model.cluster_centers_)
+    train_scaled = scaler.transform(train_features)
+    new_row_scaled = scaler.transform(new_row)
+
+    pca = PCA(n_components=2)
+    train_projected = pca.fit_transform(train_scaled)
+    centroids_projected = pca.transform(model.cluster_centers_)
+    new_customer_projected = pca.transform(new_row_scaled)
 
     plt.figure(figsize=(10, 6))
     plt.scatter(
-        train_features["Annual Income (k$)"],
-        train_features["Spending Score (1-100)"],
+        train_projected[:, 0],
+        train_projected[:, 1],
         c=train_labels,
-        cmap="viridis",
-        alpha=0.55,
-        edgecolors="none",
+        cmap="tab10",
+        alpha=0.7,
+        edgecolors="white",
+        linewidths=0.4,
         label="Training data",
     )
 
     plt.scatter(
-        centroids[:, 2],
-        centroids[:, 3],
-        s=230,
-        c="red",
+        centroids_projected[:, 0],
+        centroids_projected[:, 1],
+        s=280,
+        c="#e53935",
         marker="X",
         edgecolors="black",
+        linewidths=1.1,
         label="Centroids",
     )
 
     plt.scatter(
-        [new_row["Annual Income (k$)"].iloc[0]],
-        [new_row["Spending Score (1-100)"].iloc[0]],
-        s=220,
+        [new_customer_projected[0, 0]],
+        [new_customer_projected[0, 1]],
+        s=260,
         c="orange",
         edgecolors="black",
         marker="*",
         label=f"New customer -> Cluster {cluster}",
     )
 
-    plt.xlabel("Annual Income (k$)")
-    plt.ylabel("Spending Score (1-100)")
-    plt.title("K-Means Test: New Customer Cluster Assignment")
+    plt.xlabel("PCA Component 1")
+    plt.ylabel("PCA Component 2")
+    plt.title("K-Means Test: New Customer Assignment (PCA Projection)")
     plt.grid(alpha=0.25)
     plt.legend()
     plt.tight_layout()
